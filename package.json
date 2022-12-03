@@ -1,0 +1,16 @@
+{
+  "name": "com.oo0oo0oooooo.noise-texture-builder",
+  "version": "1.0.0",
+  "displayName": "Noise Texture Builder",
+  "description": "Save noise textures",
+  "unity": "2020.3",
+  "keywords": [
+    "Noise",
+    "noise"
+  ],
+  "author": {
+    "name": "KM",
+    "email": "OO0oo0oOOooo@hotmail.com"
+  },
+  "type": "tool"
+}
