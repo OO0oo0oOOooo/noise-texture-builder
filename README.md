@@ -4,7 +4,8 @@ Noise Tyles:
 Perlin Noise,
 Simplex Noise
 
-How To Use:
+
+
 Go to "Tools"-"Generate Noise Texture" in the top left of unity.
 
 Tweak noise settings
