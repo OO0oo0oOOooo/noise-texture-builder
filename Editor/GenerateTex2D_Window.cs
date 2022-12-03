@@ -124,12 +124,12 @@ public class GenerateTex2D_Window : EditorWindow
         if(renderTexture == null)
             return;
 
-        string filePath = Application.dataPath + "/Textures/Noise/";
-        var uniqueFileName = AssetDatabase.GenerateUniqueAssetPath(filePath + "NewTexture.png");
+        string filePath = Application.dataPath + "/Textures/";
         if(!Directory.Exists(filePath))
         {
             Directory.CreateDirectory(filePath);
         }
+        var uniqueFileName = AssetDatabase.GenerateUniqueAssetPath(filePath + "NewTexture.png");
 
         RenderTexture.active = renderTexture;
         Texture2D tex = new Texture2D(renderTexture.width, renderTexture.height, TextureFormat.RGB24, false);
@@ -143,6 +143,6 @@ public class GenerateTex2D_Window : EditorWindow
         DestroyImmediate(tex);
 
         AssetDatabase.Refresh();
-        Debug.Log(filePath + uniqueFileName);
+        Debug.Log(uniqueFileName);
     }
 }
