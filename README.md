@@ -1,3 +1,12 @@
-// Noise Library for Unity - https://github.com/keijiro/NoiseShader
+Uses Noise Library for Unity - https://github.com/keijiro/NoiseShader
 
-// 
+[Noise Tyles]
+Perlin Noise 2D
+Simplex Noise 2D
+
+How To Use
+Go to "Tools"-"Generate Noise Texture" in the top left of unity.
+
+Tweak noise settings
+
+"Save Texture" button saves the texture to Assets/Textures/Noise/
