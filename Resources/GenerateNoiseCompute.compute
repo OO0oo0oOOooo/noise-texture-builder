@@ -1,0 +1,92 @@
+#pragma kernel CSMain
+
+#include "ClassicNoise2D.hlsl"
+#include "SimplexNoise2D.hlsl"
+
+RWTexture2D<float4> Result;
+float _Resolution;
+
+float2 _Offset;
+float _Amplitude;
+float _Frequency;
+int _Octaves;
+
+int _NoiseID;
+int _EffectID;
+
+float _ThreshholdBottom;
+float _ThreshholdTop;
+
+float value;
+
+float InverseLerp(float a, float b, float v)
+{
+    return (v - a) / (b - a);
+}
+
+float remap(float origFrom, float origTo, float targetFrom, float targetTo, float value)
+{
+    float rel = InverseLerp(origFrom, origTo, value);
+    return lerp(targetFrom, targetTo, rel);
+}
+
+float RemapNoise(float v)
+{
+    float valueBot = -v;
+    if(_EffectID == 1)
+    {
+        value = abs(value);
+        valueBot = 0;
+    }
+    
+    if(_EffectID == 2)
+    {
+        valueBot = 0;
+    }
+
+    return remap(valueBot + _ThreshholdBottom, v + _ThreshholdTop, 0, 1, value);
+}
+
+float Effects(float value)
+{
+    if(_EffectID == 2)
+    {
+        return abs(value);
+    }
+
+    return value;
+}
+
+float GetNoise(float x, float y, float freq, float amp)
+{
+
+    if(_NoiseID == 1)
+    {
+        return SimplexNoise( float2(x, y) * freq + _Offset ) * amp;
+    }
+
+    return ClassicNoise( float2(x, y) * freq + _Offset ) * amp;
+}
+
+[numthreads(8,8,1)]
+void CSMain (uint3 id : SV_DispatchThreadID)
+{
+    float x = id.x / _Resolution;
+    float y = id.y / _Resolution;
+
+    float freq = _Frequency;
+    float amp = _Amplitude;
+    float valueSize;
+
+    value = 0;
+    for(int i = 0; i < _Octaves; i++)
+    {
+        value += Effects(GetNoise(x, y, freq, amp));
+        valueSize += amp;
+        amp *= 0.5;
+        freq *= 2;
+    }
+
+    float c = RemapNoise(valueSize);
+    Result[id.xy] = float4(c, c, c, 1);
+}
