@@ -1,8 +1,9 @@
+# Noise Texture Builder
 Uses Noise Library for Unity - https://github.com/keijiro/NoiseShader
 
-Noise Tyles:
-Perlin Noise,
-Simplex Noise
+# Noise Options
+* Perlin Noise
+* Simplex Noise
 
 
 
