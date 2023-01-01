@@ -5,16 +5,22 @@ Uses Noise Library for Unity - https://github.com/keijiro/NoiseShader
 Noise Types
 * Perlin Noise
 * Simplex Noise
+*
+* Billow
+* Ridgid
+* 
 
-Noise Options
+Noise Parameters
+* Octaves
 * Frequency
+* Lacunarity
+* Gain
+
+* Warp Strength
 * Offset
 
 * Noise cuttoff threshholds
 * Octaves
-
-* Abs(noise)
-
 
 # How To Use
 Package Manager - Add package from git URL - https://github.com/OO0oo0oOOooo/noise-texture-builder.git
