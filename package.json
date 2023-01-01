@@ -1,6 +1,6 @@
 {
   "name": "com.oo0oo0oooooo.noise-texture-builder",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "displayName": "Noise Texture Builder",
   "description": "Save noise textures",
   "unity": "2020.3",
