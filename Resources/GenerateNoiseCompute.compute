@@ -2,91 +2,112 @@
 
 #include "ClassicNoise2D.hlsl"
 #include "SimplexNoise2D.hlsl"
+#include "MathUtils.hlsl"
 
 RWTexture2D<float4> Result;
-float _Resolution;
+float Resolution;
 
-float2 _Offset;
-float _Amplitude;
-float _Frequency;
-int _Octaves;
+float2 Seed;
 
-int _NoiseID;
-int _EffectID;
+int Octaves;
+float Frequency;
+float Amplitude;
+float Lacunarity;
+float Gain;
 
-float _ThreshholdBottom;
-float _ThreshholdTop;
+float WarpStrength;
+float2 Offset;
 
-float value;
+int NoiseID;
+int EffectID;
 
-float InverseLerp(float a, float b, float v)
-{
-    return (v - a) / (b - a);
-}
+float NoiseProcessing(float value)
+{   
 
-float remap(float origFrom, float origTo, float targetFrom, float targetTo, float value)
-{
-    float rel = InverseLerp(origFrom, origTo, value);
-    return lerp(targetFrom, targetTo, rel);
-}
+    if(EffectID == 0)
+        return (value + 1) / 2;
 
-float RemapNoise(float v)
-{
-    float valueBot = -v;
-    if(_EffectID == 1)
-    {
-        value = abs(value);
-        valueBot = 0;
-    }
-    
-    if(_EffectID == 2)
-    {
-        valueBot = 0;
-    }
-
-    return remap(valueBot + _ThreshholdBottom, v + _ThreshholdTop, 0, 1, value);
-}
-
-float Effects(float value)
-{
-    if(_EffectID == 2)
-    {
+    // ABS
+    if(EffectID == 1)
         return abs(value);
-    }
 
-    return value;
+    // 1-ABS
+    if(EffectID == 2)
+        return 1 - abs(value);
+
+    if(EffectID == 3)
+        return value;
+
+    if(EffectID == 4)
+        return map(-1, 1, 0, 1, value);
+
+    if(EffectID == 5)
+        return remap(-1, 1, 0, 1, value);
+
+    return 0;
 }
 
-float GetNoise(float x, float y, float freq, float amp)
+float GetNoiseLayer(float2 p)
 {
+    // 0 Classic
+    if(NoiseID == 0)
+        return ClassicNoise(p);
 
-    if(_NoiseID == 1)
+    // 1 Classic Billow
+    if(NoiseID == 1)
+        return abs(ClassicNoise(p));
+
+    // 2 Classic Ridged
+    if(NoiseID == 2)
+        return (1 - abs(ClassicNoise(p)));
+
+
+    // Simplex
+    if(NoiseID == 3)
+        return SimplexNoise(p);
+
+    // Simplex Billow
+    if(NoiseID == 4)
+        return abs(SimplexNoise(p));
+
+    // Simplex Ridged
+    if(NoiseID == 5)
+        return (1 - abs(SimplexNoise(p)));
+
+    return 0;
+}
+
+float FractalBrownianMotion(float2 p, int octaves, float freq, float amp, float lacunarity, float gain)
+{
+    float sum = 0;
+    for(int i = 0; i < octaves; i++)
     {
-        return SimplexNoise( float2(x, y) * freq + _Offset ) * amp;
+        float n = GetNoiseLayer(p * freq + Offset); //  + Offset
+        sum += n*amp;
+        freq *= lacunarity;
+        amp *= gain;
     }
 
-    return ClassicNoise( float2(x, y) * freq + _Offset ) * amp;
+    return sum;
+}
+
+float DomainWarp(float x, float y)
+{
+    float xOffset = FractalBrownianMotion(float2(x + 0, y + 0), Octaves, Frequency, Amplitude, Lacunarity, Gain); // Another Offset?
+    float yOffset = FractalBrownianMotion(float2(x + 5.2, y + 2.4), Octaves, Frequency, Amplitude, Lacunarity, Gain); // Another Offset?
+
+    return FractalBrownianMotion(float2(x + WarpStrength * xOffset, y + WarpStrength * yOffset), Octaves, Frequency, Amplitude, Lacunarity, Gain); // Offset does kinda cool stuff here
 }
 
 [numthreads(8,8,1)]
 void CSMain (uint3 id : SV_DispatchThreadID)
 {
-    float x = id.x / _Resolution;
-    float y = id.y / _Resolution;
+    float x = id.x / Resolution;
+    float y = id.y / Resolution;
 
-    float freq = _Frequency;
-    float amp = _Amplitude;
-    float valueSize;
+    // float noise = FractalBrownianMotion(float2(x, y), Octaves, Frequency, Amplitude, Lacunarity, Gain);
+    float noise = DomainWarp(x, y);
+    float value = NoiseProcessing(noise);
 
-    value = 0;
-    for(int i = 0; i < _Octaves; i++)
-    {
-        value += Effects(GetNoise(x, y, freq, amp));
-        valueSize += amp;
-        amp *= 0.5;
-        freq *= 2;
-    }
-
-    float c = RemapNoise(valueSize);
-    Result[id.xy] = float4(c, c, c, 1);
+    Result[id.xy] = float4(value, value, value, 1);
 }

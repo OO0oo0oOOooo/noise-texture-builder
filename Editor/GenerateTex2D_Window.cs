@@ -1,33 +1,40 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor;
 using System.IO;
 
 public class GenerateTex2D_Window : EditorWindow
 {
-    private ComputeShader compute;
-    private RenderTexture renderTexture;
+    private ComputeShader _compute;
+    private RenderTexture _renderTexture;
 
-    public int resolution = 256;
-    public Vector2 offset = Vector2.zero;
-    public float amplitude = 1f;
-    public float frequency = 1;
-    public int octaves = 1;
-    public float threshholdBot = 0;
-    public float threshholdTop = 0;
+    private int _resolution = 256;
+    private int _seed = 69420;
 
-    NoiseTypes noise;
+    private int _octaves = 3;
+    private float _frequency = 5;
+    private float _amplitude = 1f;
+    private float _lacunarity = 2;
+    private float _gain = 0.5f;
+
+    private float _warpStrength = 0.4f;
+    private Vector2 _offset = Vector2.zero;
+    private Vector2 _threshhold = new Vector2(0, 0);
+
+    NoiseTypes _noise;
     public enum NoiseTypes
     {
-        Classic, Simplex
-        //FlowField, Veroni, Worly, Cellular, Warped
+        Classic, ClassicBillow, ClassicRidged,
+        Simplex, SimplexBillow, SimplexRidged,
+        // Veroni,
+        // Worly,
+
+        // FlowField, Cellular, Warped, Analitical Derivative
     }
 
-    EffectTypes effect;
+    EffectTypes _effect;
     public enum EffectTypes
     {
-        Default, Abs, AbsLayers
+        Default, Abs, OneMinusAbs, Raw, Map, Remap
     }
 
     [MenuItem("Tools/Generate Noise Texture")]
@@ -38,90 +45,101 @@ public class GenerateTex2D_Window : EditorWindow
 
     void OnEnable()
     {
-        if(compute==null)
+        if(_compute==null)
         {
-            compute = (ComputeShader)Resources.Load("GenerateNoiseCompute", typeof(ComputeShader));
+            _compute = (ComputeShader)Resources.Load("GenerateNoiseCompute", typeof(ComputeShader));
         }
 
-        if (renderTexture==null)
+        if (_renderTexture==null)
         {
-            renderTexture = new RenderTexture(resolution, resolution, 24);
-            renderTexture.enableRandomWrite = true;
-            renderTexture.Create();
+            _renderTexture = new RenderTexture(_resolution, _resolution, 24);
+            _renderTexture.enableRandomWrite = true;
+            _renderTexture.Create();
         }
     }
     
     void OnDisable()
     {
-        if(renderTexture != null)
-            DestroyImmediate(renderTexture);
+        if(_renderTexture != null)
+            DestroyImmediate(_renderTexture);
     }
 
     public void OnGUI()
     {
         EditorGUI.BeginDisabledGroup(true);
-        compute = EditorGUILayout.ObjectField(new GUIContent ("Compute Shader"), compute, typeof (ComputeShader), false) as ComputeShader;
+        _compute = EditorGUILayout.ObjectField(new GUIContent ("Compute Shader"), _compute, typeof (ComputeShader), false) as ComputeShader;
         EditorGUI.EndDisabledGroup();
 
-        resolution = EditorGUILayout.IntField("Texture Resolution", resolution);
+        _resolution = EditorGUILayout.IntField("Texture Resolution", _resolution);
         using ( new GUILayout.HorizontalScope() ) 
         {
             GUILayout.Label("Noise Type");
-            noise = (NoiseTypes)EditorGUILayout.EnumPopup(noise);
+            _noise = (NoiseTypes)EditorGUILayout.EnumPopup(_noise);
         }
 
         using ( new GUILayout.HorizontalScope() ) 
         {
             GUILayout.Label("Effect Type");
-            effect = (EffectTypes)EditorGUILayout.EnumPopup(effect);
+            _effect = (EffectTypes)EditorGUILayout.EnumPopup(_effect);
         }
+
+        // Display if Remap Effect Selected
+        // if(_effect == EffectTypes.Default)
+        //     _threshhold = EditorGUILayout.Vector2Field("Threshhold", _threshhold);
+
         GUILayout.Space(20);
 
-        // amplitude = EditorGUILayout.FloatField("Amplitude", amplitude);
-        frequency = EditorGUILayout.FloatField("Frequency", frequency);
-        offset = EditorGUILayout.Vector2Field("Offset", offset);
-
-        threshholdBot = EditorGUILayout.FloatField("Bottom Threshhold", threshholdBot);
-        threshholdTop = EditorGUILayout.FloatField("Top Threshhold", threshholdTop);
+        GUILayout.Label("Noise Parameters");
+        _octaves = EditorGUILayout.IntField("Octaves", _octaves);
+        // _seed = EditorGUILayout.IntField("Seed", _seed);
+        // _amplitude = EditorGUILayout.FloatField("Amplitude", amplitude);
+        _frequency = EditorGUILayout.FloatField("Frequency", _frequency);
+        _lacunarity = EditorGUILayout.FloatField("Lacunarity", _lacunarity);
+        _gain = EditorGUILayout.FloatField("Gain", _gain);
+        _warpStrength = EditorGUILayout.FloatField("WarpStrength", _warpStrength);
+        _offset = EditorGUILayout.Vector2Field("Offset", _offset);
         GUILayout.Space(20);
-
-        octaves = EditorGUILayout.IntField("Octaves", octaves);
     
         if(GUILayout.Button("Save Texture"))
         {
             SavePNG();
         }
 
-        if(compute != null)
+        if(_compute != null)
         {
-            Compute((int)noise);
+            Compute((int)_noise);
             GUILayout.Space(20);
-            GUILayout.Label(renderTexture);
+            GUILayout.Label(_renderTexture);
         }
     }
 
     public void Compute(int type)
     {
-        compute.SetTexture(0, "Result", renderTexture);
-        compute.SetFloat("_Resolution", resolution);
+        _compute.SetTexture(0, "Result", _renderTexture);
+        _compute.SetFloat("Resolution", _resolution);
 
-        compute.SetVector("_Offset", offset);
-        compute.SetFloat("_Amplitude", amplitude);
-        compute.SetFloat("_Frequency", frequency);
-        compute.SetInt("_Octaves", octaves);
+        _compute.SetFloat("Seed", _seed);
+        _compute.SetInt("Octaves", _octaves);
+        
+        _compute.SetFloat("Frequency", _frequency);
+        _compute.SetFloat("Amplitude", _amplitude);
+        _compute.SetFloat("Lacunarity", _lacunarity);
+        _compute.SetFloat("Gain", _gain);
 
-        compute.SetInt("_NoiseID", (int)noise);
-        compute.SetInt("_EffectID", (int)effect);
+        _compute.SetFloat("WarpStrength", _warpStrength);
+        _compute.SetVector("Offset", _offset);
 
-        compute.SetFloat("_ThreshholdBottom", threshholdBot);
-        compute.SetFloat("_ThreshholdTop", threshholdTop);
+        _compute.SetInt("NoiseID", (int)_noise);
+        _compute.SetInt("EffectID", (int)_effect);
 
-        compute.Dispatch(0, renderTexture.width/8, renderTexture.height/8, 1);
+        _compute.SetVector("Threshhold", _threshhold);
+
+        _compute.Dispatch(0, _renderTexture.width/8, _renderTexture.height/8, 1);
     }
 
     public void SavePNG()
     {
-        if(renderTexture == null)
+        if(_renderTexture == null)
             return;
 
         string filePath = Application.dataPath + "/Textures/";
@@ -131,10 +149,10 @@ public class GenerateTex2D_Window : EditorWindow
         }
         var uniqueFileName = AssetDatabase.GenerateUniqueAssetPath(filePath + "NewTexture.png");
 
-        RenderTexture.active = renderTexture;
-        Texture2D tex = new Texture2D(renderTexture.width, renderTexture.height, TextureFormat.RGB24, false);
+        RenderTexture.active = _renderTexture;
+        Texture2D tex = new Texture2D(_renderTexture.width, _renderTexture.height, TextureFormat.RGB24, false);
 
-        tex.ReadPixels(new Rect(0, 0, renderTexture.width, renderTexture.height), 0, 0);
+        tex.ReadPixels(new Rect(0, 0, _renderTexture.width, _renderTexture.height), 0, 0);
         tex.Apply();
 
         byte[] bytes = tex.EncodeToPNG();
