@@ -8,19 +8,15 @@ Noise Types
 *
 * Billow
 * Ridgid
-* 
 
 Noise Parameters
 * Octaves
 * Frequency
 * Lacunarity
 * Gain
-
+*
 * Warp Strength
 * Offset
-
-* Noise cuttoff threshholds
-* Octaves
 
 # How To Use
 Package Manager - Add package from git URL - https://github.com/OO0oo0oOOooo/noise-texture-builder.git
