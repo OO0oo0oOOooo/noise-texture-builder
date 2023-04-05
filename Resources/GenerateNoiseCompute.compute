@@ -2,7 +2,7 @@
 
 #include "ClassicNoise2D.hlsl"
 #include "SimplexNoise2D.hlsl"
-#include "MathUtils.hlsl"
+#include "Maffs.hlsl"
 
 RWTexture2D<float4> Result;
 float Resolution;
@@ -23,58 +23,44 @@ int EffectID;
 
 float NoiseProcessing(float value)
 {   
-
-    if(EffectID == 0)
-        return (value + 1) / 2;
-
-    // ABS
-    if(EffectID == 1)
-        return abs(value);
-
-    // 1-ABS
-    if(EffectID == 2)
-        return 1 - abs(value);
-
-    if(EffectID == 3)
-        return value;
-
-    if(EffectID == 4)
-        return map(-1, 1, 0, 1, value);
-
-    if(EffectID == 5)
-        return remap(-1, 1, 0, 1, value);
-
-    return 0;
+    switch(EffectID)
+    {
+        case 0:
+            return (value + 1) / 2;
+        case 1:
+            return abs(value);
+        case 2:
+            return 1 - abs(value);
+        case 3:
+            return value;
+        case 4:
+            return map(-1, 1, 0, 1, value);
+        case 5:
+            return remap(-1, 1, 0, 1, value);
+        default:
+            return (value + 1) / 2;
+    }
 }
 
 float GetNoiseLayer(float2 p)
 {
-    // 0 Classic
-    if(NoiseID == 0)
-        return ClassicNoise(p);
-
-    // 1 Classic Billow
-    if(NoiseID == 1)
-        return abs(ClassicNoise(p));
-
-    // 2 Classic Ridged
-    if(NoiseID == 2)
-        return (1 - abs(ClassicNoise(p)));
-
-
-    // Simplex
-    if(NoiseID == 3)
-        return SimplexNoise(p);
-
-    // Simplex Billow
-    if(NoiseID == 4)
-        return abs(SimplexNoise(p));
-
-    // Simplex Ridged
-    if(NoiseID == 5)
-        return (1 - abs(SimplexNoise(p)));
-
-    return 0;
+    switch (NoiseID)
+    {
+        case 0:
+            return ClassicNoise(p);
+        case 1:
+            return abs(ClassicNoise(p));
+        case 2:
+            return (1 - abs(ClassicNoise(p)));
+        case 3:
+            return SimplexNoise(p);
+        case 4:
+            return abs(SimplexNoise(p));
+        case 5:
+            return (1 - abs(SimplexNoise(p)));
+        default:
+            return ClassicNoise(p);
+    }
 }
 
 float FractalBrownianMotion(float2 p, int octaves, float freq, float amp, float lacunarity, float gain)
