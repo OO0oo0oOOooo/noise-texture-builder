@@ -45,6 +45,8 @@ public class GenerateTex2D_Window : EditorWindow
 
     void OnEnable()
     {
+        minSize = new Vector2(200, 400);
+
         if(_compute==null)
         {
             _compute = (ComputeShader)Resources.Load("GenerateNoiseCompute", typeof(ComputeShader));
@@ -56,6 +58,9 @@ public class GenerateTex2D_Window : EditorWindow
             _renderTexture.enableRandomWrite = true;
             _renderTexture.Create();
         }
+
+        if(_compute != null)
+            Compute();
     }
     
     void OnDisable()
@@ -66,10 +71,21 @@ public class GenerateTex2D_Window : EditorWindow
 
     public void OnGUI()
     {
+        // if (position.width > 400)
+        //     WideWindow();
+        // else
+
+        NarrowWindowGUI();
+    }
+
+    bool _showNoiseOptions = false;
+    private void NarrowWindowGUI()
+    {
         EditorGUI.BeginDisabledGroup(true);
         _compute = EditorGUILayout.ObjectField(new GUIContent ("Compute Shader"), _compute, typeof (ComputeShader), false) as ComputeShader;
         EditorGUI.EndDisabledGroup();
 
+        EditorGUI.BeginChangeCheck();
         _resolution = EditorGUILayout.IntField("Texture Resolution", _resolution);
         using ( new GUILayout.HorizontalScope() ) 
         {
@@ -84,36 +100,44 @@ public class GenerateTex2D_Window : EditorWindow
         }
 
         // Display if Remap Effect Selected
-        // if(_effect == EffectTypes.Default)
+        // if(_effect == EffectTypes.Map)
         //     _threshhold = EditorGUILayout.Vector2Field("Threshhold", _threshhold);
 
-        GUILayout.Space(20);
+        GUILayout.Space(10);
 
-        GUILayout.Label("Noise Parameters");
-        _octaves = EditorGUILayout.IntField("Octaves", _octaves);
-        // _seed = EditorGUILayout.IntField("Seed", _seed);
-        // _amplitude = EditorGUILayout.FloatField("Amplitude", amplitude);
-        _frequency = EditorGUILayout.FloatField("Frequency", _frequency);
-        _lacunarity = EditorGUILayout.FloatField("Lacunarity", _lacunarity);
-        _gain = EditorGUILayout.FloatField("Gain", _gain);
-        _warpStrength = EditorGUILayout.FloatField("WarpStrength", _warpStrength);
-        _offset = EditorGUILayout.Vector2Field("Offset", _offset);
-        GUILayout.Space(20);
+        if(_showNoiseOptions = EditorGUILayout.Foldout(_showNoiseOptions, "Noise Options"))
+        {
+            _octaves = EditorGUILayout.IntField("Octaves", _octaves);
+            // _seed = EditorGUILayout.IntField("Seed", _seed);
+            // _amplitude = EditorGUILayout.FloatField("Amplitude", amplitude);
+            _frequency = EditorGUILayout.FloatField("Frequency", _frequency);
+            _lacunarity = EditorGUILayout.FloatField("Lacunarity", _lacunarity);
+            _gain = EditorGUILayout.FloatField("Gain", _gain);
+            _warpStrength = EditorGUILayout.FloatField("WarpStrength", _warpStrength);
+            _offset = EditorGUILayout.Vector2Field("Offset", _offset);
+        }
+
+        GUILayout.Space(2);
+        if(EditorGUI.EndChangeCheck())
+        {
+            Debug.Log("COMPUTE");
+            if(_compute != null)
+                Compute();
+        }
     
         if(GUILayout.Button("Save Texture"))
         {
             SavePNG();
         }
 
-        if(_compute != null)
-        {
-            Compute((int)_noise);
-            GUILayout.Space(20);
-            GUILayout.Label(_renderTexture);
-        }
+        float windowWidth = position.width;
+        Rect rect = GUILayoutUtility.GetRect(0, 0, GUILayout.Width(windowWidth), GUILayout.Height(windowWidth));
+        GUI.DrawTexture(rect, _renderTexture);
     }
 
-    public void Compute(int type)
+    // private void WideWindow()
+
+    public void Compute()
     {
         _compute.SetTexture(0, "Result", _renderTexture);
         _compute.SetFloat("Resolution", _resolution);
