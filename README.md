@@ -26,3 +26,4 @@ Go to "Tools"-"Generate Noise Texture" in the top left of unity.
 Tweak noise settings
 
 "Save Texture" button saves the texture to Assets/Textures/Noise/
+l;'k
